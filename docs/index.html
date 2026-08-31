@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="A FlyRank ML Internship research paper about prioritizing content for refresh review using search-performance and content-freshness signals."
+    >
+
+    <meta name="author" content="Fahad Kareem">
+
+    <title>
+        Prioritizing Content for Refresh Review | Fahad Kareem
+    </title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <nav class="nav-bar" aria-label="Research paper navigation">
+            <a href="#abstract">Abstract</a>
+            <a href="#introduction">Introduction</a>
+            <a href="#data">Data</a>
+            <a href="#methodology">Methodology</a>
+            <a href="#results">Results</a>
+            <a href="#limitations">Limitations</a>
+            <a href="#recommendations">Recommendations</a>
+            <a href="#reproducibility">Reproducibility</a>
+        </nav>
+
+        <div class="hero">
+            <p class="hero-label">
+                FlyRank ML Internship Capstone
+            </p>
+
+            <h1>
+                Prioritizing Content for Refresh Review
+            </h1>
+
+            <p class="subtitle">
+                A grouped-validation study using anonymized
+                search-performance and content-freshness signals
+            </p>
+
+            <div class="hero-meta">
+                <span>Fahad Kareem</span>
+                <span>Refresh / Content Opportunity Scoring</span>
+                <span>2026</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="page-wrap">
+
+        <section id="abstract">
+            <p class="section-kicker">Summary</p>
+            <h2>Abstract</h2>
+
+            <p class="lead">
+                This study asks whether observable content-freshness
+                and search-performance signals can improve the ranking
+                of pages for refresh review compared with a simple
+                stale-and-visible rule. I analyzed 30,000 anonymized
+                content items from 32 pseudonymized clients and
+                evaluated the methods using a grouped client holdout.
+                I compared the Week-4 rule with Logistic Regression and
+                Random Forest on the same test rows, using Precision@10
+                as the primary operational metric. The selected method,
+                Logistic Regression, achieved a Precision@10 of 0.800,
+                compared with 0.300 for the rule baseline, a difference
+                of +0.500. The results support a directional
+                human-review queue, but they do not prove that content
+                age causes decline or that refreshing a recommended
+                page will improve search performance.
+            </p>
+
+            <div class="stats">
+                <article class="stat">
+                    <span class="stat-number">30,000</span>
+                    <span class="stat-caption">Content items</span>
+                </article>
+
+                <article class="stat">
+                    <span class="stat-number">32</span>
+                    <span class="stat-caption">Pseudonymized clients</span>
+                </article>
+
+                <article class="stat">
+                    <span class="stat-number">0.800</span>
+                    <span class="stat-caption">Best Precision@10</span>
+                </article>
+
+                <article class="stat">
+                    <span class="stat-number">+0.500</span>
+                    <span class="stat-caption">Gain over baseline</span>
+                </article>
+            </div>
+        </section>
+
+        <section id="introduction">
+            <p class="section-kicker">Research question</p>
+            <h2>Introduction and problem statement</h2>
+
+            <p>
+                Content teams often manage more pages than they can
+                inspect manually. Reviewing every page requires time,
+                while relying only on intuition may cause important
+                opportunities to be missed.
+            </p>
+
+            <p>
+                This research supports one practical decision:
+                <strong>
+                    which anonymized content items should a human
+                    reviewer inspect first for a possible refresh?
+                </strong>
+            </p>
+
+            <p>
+                The output is a ranked decision-support queue rather
+                than an automatic editing system. Each item receives
+                an action score, an action label, and one reason code.
+                A higher score means that the item should be reviewed
+                earlier; it does not mean that it must be rewritten.
+            </p>
+
+            <div class="callout">
+                <strong>Research question:</strong>
+                Can observable content-freshness and search-performance
+                signals improve refresh-review ranking compared with a
+                simple stale-and-visible rule?
+            </div>
+        </section>
+
+        <section id="data">
+            <p class="section-kicker">Dataset</p>
+            <h2>Data</h2>
+
+            <p>
+                This capstone uses the anonymized FlyRank starter
+                release for the Refresh / Content Opportunity Scoring
+                lane. The dataset contains 30,000 content items from
+                32 pseudonymized clients.
+            </p>
+
+            <h3>Unit of analysis</h3>
+
+            <p>
+                One row represents one pseudonymized content item.
+                The fields <code>content_id</code> and
+                <code>client_id</code> are used for grouping,
+                auditing, and public-safe recommendation examples.
+                They are not predictive features.
+            </p>
+
+            <h3>Observed outcome</h3>
+
+            <p>
+                The observed binary label is equal to one when
+                <code>trend_direction</code> is
+                <code>down</code>. The label represents a decline in
+                recent impression performance relative to the previous
+                comparison period.
+            </p>
+
+            <p>
+                This label is an operational proxy. A downward
+                impression trend does not prove that a page is
+                outdated, inaccurate, or guaranteed to benefit from a
+                refresh.
+            </p>
+
+            <h3>Signals included</h3>
+
+            <ul>
+                <li>Trailing search impressions and clicks</li>
+                <li>Sessions, users, and engagement measurements</li>
+                <li>Average search position and click-through rate</li>
+                <li>Content age and days since last update</li>
+                <li>Content type and search intent</li>
+                <li>Measurement-availability indicators</li>
+            </ul>
+
+            <h3>Deliberate exclusions</h3>
+
+            <ul>
+                <li>
+                    <code>trend_direction</code> and
+                    <code>trend_pct</code>
+                </li>
+                <li>Explicit current and previous 30-day fields</li>
+                <li>Client and content identifiers as model inputs</li>
+                <li>Provider and model names</li>
+                <li>Private names, domains, URLs, and search queries</li>
+            </ul>
+
+            <div class="callout">
+                No client names, domains, page URLs, private queries,
+                credentials, or raw client exports are published.
+            </div>
+        </section>
+
+        <section id="methodology">
+            <p class="section-kicker">Approach</p>
+            <h2>Methodology</h2>
+
+            <h3>Transparent baseline</h3>
+
+            <p>
+                The Week-4 rule marks a content item as eligible for
+                refresh review when:
+            </p>
+
+            <pre><code>days_since_last_update &gt;= 91
+AND
+impressions_90d &gt;= 100</code></pre>
+
+            <p>
+                Eligible pages are ranked by visibility. The baseline
+                reason code is
+                <code>stale_visible_page</code>.
+            </p>
+
+            <h3>Models</h3>
+
+            <p>
+                Two supervised models were trained:
+            </p>
+
+            <ul>
+                <li>
+                    <strong>Logistic Regression</strong> as the primary
+                    interpretable ranking model
+                </li>
+                <li>
+                    <strong>Random Forest</strong> as a nonlinear
+                    challenger
+                </li>
+            </ul>
+
+            <p>
+                Numeric fields were median-imputed inside the model
+                pipeline. Numeric features were standardized for
+                Logistic Regression. Categorical values were
+                one-hot encoded, and highly skewed traffic totals were
+                transformed using <code>log1p</code>.
+            </p>
+
+            <h3>Grouped validation</h3>
+
+            <p>
+                The train-test split was grouped by
+                <code>client_id</code>. Twenty-four clients were used
+                for training and eight different clients were used for
+                testing. No client appeared in both groups.
+            </p>
+
+            <p>
+                This design is more honest than a random row split
+                because pages from the same client may share traffic,
+                publishing, measurement, and content patterns.
+            </p>
+
+            <h3>Metrics</h3>
+
+            <p>
+                The primary metric is
+                <strong>Precision@10</strong>, because the operational
+                output is a small queue for human review.
+            </p>
+
+            <p>Additional metrics include:</p>
+
+            <ul>
+                <li>Precision@50</li>
+                <li>Precision@100</li>
+                <li>Average Precision</li>
+                <li>ROC AUC</li>
+            </ul>
+
+            <p>
+                The base rate, baseline rule, Logistic Regression, and
+                Random Forest were evaluated on the same held-out rows,
+                label, split, and metrics.
+            </p>
+        </section>
+
+        <section id="results">
+            <p class="section-kicker">Findings</p>
+            <h2>Results</h2>
+
+            <p class="lead">
+                Logistic Regression produced the strongest top-ten
+                review queue. On the held-out client test set, it
+                achieved Precision@10 of 0.800, compared with 0.300
+                for the stale-and-visible Week-4 baseline.
+            </p>
+
+            <p>
+                Logistic Regression also achieved Precision@50 of
+                0.720, Precision@100 of 0.740, Average Precision of
+                0.622, and ROC AUC of 0.625.
+            </p>
+
+            <p>
+                Random Forest achieved Precision@10 of 0.500, Average
+                Precision of 0.603, and ROC AUC of 0.612. Although it
+                was more complex, it did not produce a better top-ten
+                queue, so Logistic Regression was retained.
+            </p>
+
+            <div class="results-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Precision@10</th>
+                            <th>Precision@50</th>
+                            <th>Precision@100</th>
+                            <th>Average Precision</th>
+                            <th>ROC AUC</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>Base rate</td>
+                            <td>0.517</td>
+                            <td>0.517</td>
+                            <td>0.517</td>
+                            <td>0.517</td>
+                            <td>0.500</td>
+                        </tr>
+
+                        <tr>
+                            <td>Week-4 rule baseline</td>
+                            <td>0.300</td>
+                            <td>0.300</td>
+                            <td>0.300</td>
+                            <td>0.506</td>
+                            <td>0.488</td>
+                        </tr>
+
+                        <tr class="selected-row">
+                            <td>Logistic Regression</td>
+                            <td>0.800</td>
+                            <td>0.720</td>
+                            <td>0.740</td>
+                            <td>0.622</td>
+                            <td>0.625</td>
+                        </tr>
+
+                        <tr>
+                            <td>Random Forest</td>
+                            <td>0.500</td>
+                            <td>0.660</td>
+                            <td>0.640</td>
+                            <td>0.603</td>
+                            <td>0.612</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <figure>
+                <img
+                    src="assets/figures/model_comparison.jpg"
+                    alt="Comparison of the Week-4 baseline, Logistic Regression, and Random Forest"
+                    loading="lazy"
+                >
+
+                <figcaption>
+                    Figure 1. Model and baseline precision evaluated
+                    on the same grouped client holdout.
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img
+                    src="assets/figures/feature_importance.jpg"
+                    alt="Permutation importance for Logistic Regression"
+                    loading="lazy"
+                >
+
+                <figcaption>
+                    Figure 2. Permutation importance for the selected
+                    Logistic Regression model.
+                </figcaption>
+            </figure>
+
+            <p class="key-insight">
+                Historical impressions, clicks, users, sessions, and
+                average position were the most useful held-out
+                predictive signals. Their importance represents
+                association with the observed decline label, not proof
+                that changing these measurements would cause
+                performance to improve.
+            </p>
+
+            <figure>
+                <img
+                    src="assets/figures/error_by_content_type.jpeg"
+                    alt="Held-out model error rate by content type"
+                    loading="lazy"
+                >
+
+                <figcaption>
+                    Figure 3. Held-out error rates by content type show
+                    where human review should be more cautious.
+                </figcaption>
+            </figure>
+
+            <h3>Error interpretation</h3>
+
+            <p>
+                False positives are content items ranked as likely
+                declining even though their observed label is not down.
+                Older or highly visible pages may resemble declining
+                pages without actually having the observed outcome.
+            </p>
+
+            <p>
+                False negatives are pages with an observed downward
+                trend that receive a relatively low score. These errors
+                may reflect sudden changes, seasonality, client-specific
+                effects, or information absent from the starter
+                release.
+            </p>
+        </section>
+
+        <section id="limitations">
+            <p class="section-kicker">Honest framing</p>
+            <h2>Limitations</h2>
+
+            <div class="limits">
+                <article class="limit">
+                    <h3>Proxy outcome</h3>
+
+                    <p>
+                        Impression decline does not automatically mean
+                        that content is outdated or requires a refresh.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Not causal</h3>
+
+                    <p>
+                        The analysis does not test whether refreshing a
+                        page causes search-performance recovery.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Snapshot design</h3>
+
+                    <p>
+                        The starter release supports diagnostic ranking
+                        rather than a strict future forecasting claim.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Seasonality and noise</h3>
+
+                    <p>
+                        Demand changes, tracking variation, or ordinary
+                        volatility may appear as decline.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Limited clients</h3>
+
+                    <p>
+                        The grouped test contains eight pseudonymized
+                        clients and may not represent every industry or
+                        publishing strategy.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Small top-ten queue</h3>
+
+                    <p>
+                        Precision@10 matches the decision but changes by
+                        ten percentage points when one item changes.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Missing decision context</h3>
+
+                    <p>
+                        The data does not fully represent business value,
+                        compliance, factual accuracy, or production cost.
+                    </p>
+                </article>
+
+                <article class="limit">
+                    <h3>Ranking scores</h3>
+
+                    <p>
+                        Scores are used primarily to order pages and are
+                        not guaranteed to be perfectly calibrated
+                        probabilities.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section id="recommendations">
+            <p class="section-kicker">Action playbook</p>
+            <h2>Ranked recommendations</h2>
+
+            <p>
+                The selected model produces a public-safe ranked queue
+                containing an action score, one action label, one reason
+                code, and a human verification step.
+            </p>
+
+            <div class="actions">
+                <article class="action">
+                    <span class="action-badge priority">
+                        Highest priority
+                    </span>
+
+                    <h3>Refresh review</h3>
+
+                    <code>high_score_stale_visible</code>
+
+                    <p>
+                        High score with stale content and measurable
+                        visibility.
+                    </p>
+
+                    <p class="verification">
+                        Check freshness, intent, seasonality, factual
+                        accuracy, completeness, and business value.
+                    </p>
+                </article>
+
+                <article class="action">
+                    <span class="action-badge metadata">
+                        Search snippet
+                    </span>
+
+                    <h3>Metadata review</h3>
+
+                    <code>visible_low_ctr</code>
+
+                    <p>
+                        Visible position with weak click-through rate
+                        and an elevated score.
+                    </p>
+
+                    <p class="verification">
+                        Inspect the title, description, snippet, and
+                        search intent before planning a full rewrite.
+                    </p>
+                </article>
+
+                <article class="action">
+                    <span class="action-badge monitor">
+                        Watch
+                    </span>
+
+                    <h3>Monitor</h3>
+
+                    <code>elevated_score_monitor</code>
+
+                    <p>
+                        Some decline-associated signals are present, but
+                        the score is not extreme.
+                    </p>
+
+                    <p class="verification">
+                        Continue monitoring and check whether the
+                        weakness persists.
+                    </p>
+                </article>
+
+                <article class="action">
+                    <span class="action-badge protect">
+                        Low concern
+                    </span>
+
+                    <h3>Protect</h3>
+
+                    <code>healthy_low_score</code>
+
+                    <p>
+                        The item has a comparatively low observed
+                        decline score.
+                    </p>
+
+                    <p class="verification">
+                        Avoid unnecessary changes and continue normal
+                        monitoring.
+                    </p>
+                </article>
+
+                <article class="action">
+                    <span class="action-badge data">
+                        Uncertain
+                    </span>
+
+                    <h3>Collect more data</h3>
+
+                    <code>insufficient_signal</code>
+
+                    <p>
+                        Search visibility or position evidence is too
+                        limited for confident action.
+                    </p>
+
+                    <p class="verification">
+                        Check tracking coverage and wait for more
+                        evidence before changing the content.
+                    </p>
+                </article>
+            </div>
+
+            <div class="callout">
+                A high model score means
+                <strong>review first</strong>, not
+                <strong>refresh automatically</strong>.
+            </div>
+        </section>
+
+        <section id="reproducibility">
+            <p class="section-kicker">Open research</p>
+            <h2>Reproducibility</h2>
+
+            <p>
+                The public repository contains the data contract,
+                transparent baseline, grouped model comparison, final
+                capstone notebook, recommendation logic, metrics, and
+                charts.
+            </p>
+
+            <p>
+                The analysis uses Python, pandas, NumPy,
+                scikit-learn, and Matplotlib with a fixed random seed of
+                <code>42</code>.
+            </p>
+
+            <div class="resources">
+                <a
+                    class="resource"
+                    href="https://github.com/ifahadkareem/FLyRank-Internship-"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <span>Repository</span>
+                    <strong>View all source files</strong>
+                </a>
+
+                <a
+                    class="resource"
+                    href="https://github.com/ifahadkareem/FLyRank-Internship-/blob/main/work/notebooks/w03_data_contract.ipynb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <span>Week 3</span>
+                    <strong>Data contract notebook</strong>
+                </a>
+
+                <a
+                    class="resource"
+                    href="https://github.com/ifahadkareem/FLyRank-Internship-/blob/main/work/notebooks/w04_baseline_score.ipynb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <span>Week 4</span>
+                    <strong>Baseline notebook</strong>
+                </a>
+
+                <a
+                    class="resource"
+                    href="https://github.com/ifahadkareem/FLyRank-Internship-/blob/main/work/notebooks/w05_model.ipynb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <span>Week 5</span>
+                    <strong>Model notebook</strong>
+                </a>
+
+                <a
+                    class="resource"
+                    href="https://github.com/ifahadkareem/FLyRank-Internship-/blob/main/work/notebooks/capstone.ipynb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <span>Capstone</span>
+                    <strong>Final research notebook</strong>
+                </a>
+            </div>
+        </section>
+
+        <section id="acknowledgments">
+            <p class="section-kicker">Credit</p>
+            <h2>Acknowledgments and data credit</h2>
+
+            <p>
+                Built on the
+                <a
+                    href="https://flyrank.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    FlyRank ML Internship dataset
+                </a>.
+            </p>
+
+            <p>
+                The dataset made it possible to practice realistic
+                search-intelligence analysis while protecting client
+                privacy through pseudonymized and public-safe fields.
+            </p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>
+            © 2026 Fahad Kareem
+        </p>
+
+        <p>
+            Directional decision-support research · No causal search
+            ranking claims
+        </p>
+    </footer>
+</body>
+</html>
